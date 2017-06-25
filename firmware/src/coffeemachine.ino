@@ -9,10 +9,12 @@
 
 
 #define BUTTON_MAKE 0
-#define BUTTON_READY 2
 
-#define RELAY_HEATER 13
-#define RELAY_UNUSED 12
+#define RELAY_HEATER 12
+
+#define SHORT_PRESS 1
+#define LONG_PRESS 1500
+
 
 // 4 minutes and around 20 seconds, when cold
 #define COFFEE_MAKING_SECONDS  (4*60 + 20)
@@ -20,7 +22,7 @@
 
 #define COFFEE_TIME_WEEKEND_H 8
 #define COFFEE_TIME_H  6
-#define COFFEE_TIME_M  0
+#define COFFEE_TIME_M  15
 
 // here it's GMT+2 now in summertime, ideally we should discover
 // DST changes at least
@@ -46,17 +48,13 @@ void foreverblink() {
 void setup() {
 
   Serial.begin(115200);
-  WiFi.mode(WIFI_STA);
+  Serial.setDebugOutput(1);
+WiFi.mode(WIFI_STA);
   WiFi.begin(AP,PASS);
 
   digitalWrite(RELAY_HEATER, LOW);
   pinMode(RELAY_HEATER, OUTPUT);
- 
-  digitalWrite(RELAY_UNUSED, LOW);
-  pinMode(RELAY_UNUSED, OUTPUT);
-
   pinMode(BUTTON_MAKE, INPUT_PULLUP);
-  pinMode(BUTTON_READY, INPUT_PULLUP);
 
 
   setup_ota_upgrades();
@@ -76,12 +74,14 @@ void setup() {
 
 }
 
-int button_ready() {
-    return digitalRead(BUTTON_READY) == 0;
-}
-
 int button_make() {
-    return digitalRead(BUTTON_MAKE) == 0;
+    int ms = 0;
+    while(digitalRead(BUTTON_MAKE) == 0) {
+        ms += 50;
+        delay(50);
+        if (ms>LONG_PRESS) break;
+    }
+    return ms;
 }
 
 void make_coffee(){
@@ -128,17 +128,18 @@ bool is_coffee_time() {
 
 void loop() {
 
+    int button_time;
     bool  i_have_coffee = true; /* start at true, to recover from board electrica/WDT issues */
 
     ArduinoOTA.handle();
 
-    if (button_make()) {
+    button_time = button_make();
+
+    if (button_time > LONG_PRESS) {
         Serial.println("Making coffee\r\n");
         make_coffee();
         i_have_coffee = false;
-    }
-
-    if (button_ready()) {
+    } else if (button_time > SHORT_PRESS) {
         Serial.println("Ready for coffee\r\n");
         i_have_coffee = true;
         blink();
