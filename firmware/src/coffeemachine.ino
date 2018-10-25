@@ -16,8 +16,8 @@
 #define LONG_PRESS 1500
 
 
-// 4 minutes and around 20 seconds, when cold
-#define COFFEE_MAKING_SECONDS  (4*60 + 20)
+// 6 minutes when cold
+#define COFFEE_MAKING_SECONDS  (6*60)
 #define IGNORE_STOP 2
 
 #define COFFEE_TIME_WEEKEND_H 8
@@ -26,7 +26,7 @@
 
 // here it's GMT+2 now in summertime, ideally we should discover
 // DST changes at least
-#define TIMEZONE 2
+#define TIMEZONE 1
 
 void blink(){
     digitalWrite(RELAY_HEATER, HIGH);
@@ -49,7 +49,7 @@ void setup() {
 
   Serial.begin(115200);
   Serial.setDebugOutput(1);
-WiFi.mode(WIFI_STA);
+  WiFi.mode(WIFI_STA);
   WiFi.begin(AP,PASS);
 
   digitalWrite(RELAY_HEATER, LOW);
@@ -126,10 +126,10 @@ bool is_coffee_time() {
             (m == COFFEE_TIME_M));
 }
 
+bool  i_have_coffee = true; /* start at true, to recover from board electrica/WDT issues */
 void loop() {
 
     int button_time;
-    bool  i_have_coffee = true; /* start at true, to recover from board electrica/WDT issues */
 
     ArduinoOTA.handle();
 
